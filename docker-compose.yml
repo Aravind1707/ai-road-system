@@ -1,0 +1,53 @@
+version: '3.9'
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: road_ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: "postgresql://postgres:admin123@db:5432/road_ai"
+      JWT_SECRET_KEY: "super_secret"
+      AUTHORITY_EMAIL: "pwd@yourgov.org"
+      SMTP_USER: "your_email@gmail.com"
+      SMTP_PASSWORD: "your_password"
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: 587
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    expose:
+      - "5173"
+    depends_on:
+      - backend
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  db_data:
